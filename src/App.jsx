@@ -4,10 +4,15 @@ import Footer from './components/Footer.jsx';
 import Starfield from './components/Starfield.jsx';
 import BirthdayInput from './components/BirthdayInput.jsx';
 import LifeCounter from './components/LifeCounter.jsx';
+import Generation from './components/Generation.jsx';
 import BirthdayRarity from './components/BirthdayRarity.jsx';
 import OnThisDay from './components/OnThisDay.jsx';
 import LifeStats from './components/LifeStats.jsx';
+import WeeklyRhythms from './components/WeeklyRhythms.jsx';
+import CosmicDistance from './components/CosmicDistance.jsx';
+import LifeWeeks from './components/LifeWeeks.jsx';
 import LifeProgress from './components/LifeProgress.jsx';
+import ShareCard from './components/ShareCard.jsx';
 import { useBirthday } from './hooks/useBirthday.js';
 import { useReducedMotion } from './hooks/useReducedMotion.js';
 
@@ -75,10 +80,15 @@ export default function App() {
               hasTime={birthday.hasTime}
               reducedMotion={reducedMotion}
             />
+            <Generation birthDate={birthday.birthDate} />
             <BirthdayRarity birthDate={birthday.birthDate} />
             <OnThisDay birthDate={birthday.birthDate} />
             <LifeStats birthDate={birthday.birthDate} />
+            <WeeklyRhythms />
+            <CosmicDistance birthDate={birthday.birthDate} />
+            <LifeWeeks birthDate={birthday.birthDate} />
             <LifeProgress birthDate={birthday.birthDate} />
+            <ShareCard birthDate={birthday.birthDate} />
 
             <section className="section manage-section" aria-label="Manage your birthday">
               <div className="container">
