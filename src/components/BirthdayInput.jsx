@@ -11,6 +11,8 @@ const MONTH_OPTIONS = MONTH_NAMES.map((name, i) => ({
   value: i + 1,
   label: `${String(i + 1).padStart(2, '0')} · ${name}`,
 }));
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({ value: i, label: String(i).padStart(2, '0') }));
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => ({ value: i, label: String(i).padStart(2, '0') }));
 
 function daysInMonth(month /* 1-12 */, year) {
   if (!month) return 31;
@@ -23,14 +25,16 @@ function pad(n) {
 
 /**
  * Opening experience: wordmark → prompt → an unambiguous DD / MM / YYYY
- * selector (custom themed dropdowns) → Begin. Time is optional, on its own row.
+ * selector (custom themed dropdowns) → Begin. Time is optional (HH : MM).
  */
 export default function BirthdayInput({ onSubmit, initialDate = '', initialTime = '' }) {
   const [y0, m0, d0] = initialDate ? initialDate.split('-') : ['', '', ''];
+  const [ih, im] = initialTime ? initialTime.split(':') : ['', ''];
   const [day, setDay] = useState(d0 ? String(Number(d0)) : '');
   const [month, setMonth] = useState(m0 ? String(Number(m0)) : '');
   const [year, setYear] = useState(y0 ? String(Number(y0)) : '');
-  const [time, setTime] = useState(initialTime);
+  const [hour, setHour] = useState(ih !== '' && ih !== undefined ? String(Number(ih)) : '');
+  const [minute, setMinute] = useState(im !== '' && im !== undefined ? String(Number(im)) : '');
   const [error, setError] = useState('');
 
   const maxDay = useMemo(() => daysInMonth(Number(month), Number(year)), [month, year]);
@@ -46,7 +50,8 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
       return;
     }
     const dateStr = `${year}-${pad(Number(month))}-${pad(Number(day))}`;
-    const result = parseBirthday(dateStr, time);
+    const timeStr = hour !== '' ? `${pad(Number(hour))}:${pad(minute === '' ? 0 : Number(minute))}` : '';
+    const result = parseBirthday(dateStr, timeStr);
     if (!result) {
       setError("That date doesn't exist. Please check the day and month.");
       return;
@@ -56,10 +61,10 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
       return;
     }
     setError('');
-    onSubmit(dateStr, result.hasTime ? time : '');
+    onSubmit(dateStr, result.hasTime ? timeStr : '');
   };
 
-  const clamp = (setter) => (v) => {
+  const clr = (setter) => (v) => {
     setError('');
     setter(v);
   };
@@ -77,16 +82,7 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
             <span className="field-legend">Date of birth</span>
             <div className="dob-selects" role="group" aria-label="Date of birth, day month year">
               <div className="dob-col day">
-                <Select
-                  ariaLabel="Day"
-                  placeholder="DD"
-                  value={day}
-                  onChange={clamp((v) => {
-                    // Keep day valid if it exceeds the new month's length.
-                    setDay(v);
-                  })}
-                  options={dayOptions}
-                />
+                <Select ariaLabel="Day" placeholder="DD" value={day} onChange={clr(setDay)} options={dayOptions} />
               </div>
               <span className="dob-sep" aria-hidden="true">/</span>
               <div className="dob-col month">
@@ -94,7 +90,7 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
                   ariaLabel="Month"
                   placeholder="MM"
                   value={month}
-                  onChange={clamp((v) => {
+                  onChange={clr((v) => {
                     setMonth(v);
                     const max = daysInMonth(Number(v), Number(year));
                     if (day && Number(day) > max) setDay(String(max));
@@ -108,7 +104,7 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
                   ariaLabel="Year"
                   placeholder="YYYY"
                   value={year}
-                  onChange={clamp((v) => {
+                  onChange={clr((v) => {
                     setYear(v);
                     const max = daysInMonth(Number(month), Number(v));
                     if (day && Number(day) > max) setDay(String(max));
@@ -119,17 +115,20 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
             </div>
           </div>
 
-          <div className="field time-field">
-            <label htmlFor="tob">
+          <div className="field">
+            <span className="field-legend">
               Time of birth <span className="hint-optional">(optional)</span>
-            </label>
-            <input
-              id="tob"
-              className="input"
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
+            </span>
+            <div className="dob-selects time-selects" role="group" aria-label="Time of birth, hour and minute">
+              <div className="dob-col">
+                <Select ariaLabel="Hour" placeholder="HH" value={hour} onChange={clr(setHour)} options={HOUR_OPTIONS} />
+              </div>
+              <span className="dob-sep" aria-hidden="true">:</span>
+              <div className="dob-col">
+                <Select ariaLabel="Minute" placeholder="MM" value={minute} onChange={clr(setMinute)} options={MINUTE_OPTIONS} />
+              </div>
+              <div className="dob-col time-spacer" aria-hidden="true" />
+            </div>
           </div>
 
           <p className="form-error" role="alert">{error}</p>

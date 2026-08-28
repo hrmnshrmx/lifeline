@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import Reveal from './Reveal.jsx';
 import { getTotals, getAgeInYears, formatFullDate } from '../utils/dateCalculations.js';
-import { getGeneration } from '../utils/lifeExtras.js';
+import { getGeneration, abbreviate } from '../utils/lifeExtras.js';
 import { fmt } from '../utils/format.js';
 
 const W = 1080;
 const H = 1350;
 
-function roundRect(ctx, x, y, w, h, r) {
+function roundRectPath(ctx, x, y, w, h, r) {
   if (ctx.roundRect) {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, r);
@@ -22,6 +22,9 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+const compact = (n) =>
+  abbreviate(n).replace(' trillion', 'T').replace(' billion', 'B').replace(' million', 'M');
+
 export default function ShareCard({ birthDate }) {
   const canvasRef = useRef(null);
   const [status, setStatus] = useState('');
@@ -29,8 +32,8 @@ export default function ShareCard({ birthDate }) {
 
   useEffect(() => {
     try {
-      const testFile = new File([new Blob()], 't.png', { type: 'image/png' });
-      setCanShareFiles(!!(navigator.canShare && navigator.canShare({ files: [testFile] })));
+      const t = new File([new Blob()], 't.png', { type: 'image/png' });
+      setCanShareFiles(!!(navigator.canShare && navigator.canShare({ files: [t] })));
     } catch {
       setCanShareFiles(false);
     }
@@ -45,125 +48,165 @@ export default function ShareCard({ birthDate }) {
 
     const totals = getTotals(birthDate);
     const years = getAgeInYears(birthDate);
+    const weeks = Math.floor(totals.days / 7);
     const gen = getGeneration(birthDate);
+    const sans = 'Manrope, system-ui, sans-serif';
+    const serif = 'Fraunces, Georgia, serif';
 
     const paint = () => {
       // Background
       const bg = ctx.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, '#05060c');
-      bg.addColorStop(0.55, '#080c1c');
-      bg.addColorStop(1, '#04050a');
+      bg.addColorStop(0, '#060814');
+      bg.addColorStop(0.5, '#0a0f22');
+      bg.addColorStop(1, '#050609');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // Glow top-right
-      const glow = ctx.createRadialGradient(W * 0.82, H * 0.12, 40, W * 0.82, H * 0.12, 620);
-      glow.addColorStop(0, 'rgba(91,140,255,0.42)');
-      glow.addColorStop(1, 'rgba(91,140,255,0)');
-      ctx.fillStyle = glow;
+      // Glows
+      const g1 = ctx.createRadialGradient(W * 0.85, H * 0.1, 40, W * 0.85, H * 0.1, 700);
+      g1.addColorStop(0, 'rgba(91,140,255,0.45)');
+      g1.addColorStop(1, 'rgba(91,140,255,0)');
+      ctx.fillStyle = g1;
       ctx.fillRect(0, 0, W, H);
-      const glow2 = ctx.createRadialGradient(W * 0.1, H * 0.9, 20, W * 0.1, H * 0.9, 560);
-      glow2.addColorStop(0, 'rgba(185,140,255,0.3)');
-      glow2.addColorStop(1, 'rgba(185,140,255,0)');
-      ctx.fillStyle = glow2;
+      const g2 = ctx.createRadialGradient(W * 0.05, H * 0.55, 20, W * 0.05, H * 0.55, 620);
+      g2.addColorStop(0, 'rgba(185,140,255,0.28)');
+      g2.addColorStop(1, 'rgba(185,140,255,0)');
+      ctx.fillStyle = g2;
       ctx.fillRect(0, 0, W, H);
 
-      // Star dots
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      for (let i = 0; i < 90; i++) {
-        const x = (Math.sin(i * 12.9898) * 43758.5453) % 1;
-        const y = (Math.sin(i * 78.233) * 12543.734) % 1;
-        const px = Math.abs(x) * W;
-        const py = Math.abs(y) * H;
-        ctx.globalAlpha = 0.15 + (Math.abs(x) * 0.5);
+      // Stars (deterministic)
+      for (let i = 0; i < 120; i++) {
+        const x = Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1) * W;
+        const y = Math.abs((Math.sin(i * 78.233) * 12543.734) % 1) * H;
+        const r = Math.abs((Math.sin(i * 3.7) * 100) % 1) * 2 + 0.4;
+        ctx.globalAlpha = 0.12 + Math.abs((Math.sin(i * 5.1) * 10) % 1) * 0.6;
+        ctx.fillStyle = '#dbe8ff';
         ctx.beginPath();
-        ctx.arc(px, py, Math.abs(y) * 2 + 0.5, 0, Math.PI * 2);
+        ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
 
+      // Planet, bottom-right, mostly off-canvas — fills the lower corner.
+      const pcx = W * 0.92;
+      const pcy = H * 1.02;
+      const pr = 360;
+      const atmo = ctx.createRadialGradient(pcx, pcy, pr * 0.7, pcx, pcy, pr * 1.25);
+      atmo.addColorStop(0, 'rgba(120,190,255,0.25)');
+      atmo.addColorStop(1, 'rgba(120,190,255,0)');
+      ctx.fillStyle = atmo;
+      ctx.beginPath();
+      ctx.arc(pcx, pcy, pr * 1.25, 0, Math.PI * 2);
+      ctx.fill();
+      const planet = ctx.createRadialGradient(pcx - pr * 0.35, pcy - pr * 0.4, pr * 0.1, pcx, pcy, pr);
+      planet.addColorStop(0, '#6fb0ff');
+      planet.addColorStop(0.5, '#2f66c8');
+      planet.addColorStop(1, '#122a5e');
+      ctx.fillStyle = planet;
+      ctx.beginPath();
+      ctx.arc(pcx, pcy, pr, 0, Math.PI * 2);
+      ctx.fill();
+
       // Card border
       ctx.strokeStyle = 'rgba(255,255,255,0.10)';
       ctx.lineWidth = 2;
-      roundRect(ctx, 40, 40, W - 80, H - 80, 40);
+      roundRectPath(ctx, 40, 40, W - 80, H - 80, 44);
       ctx.stroke();
 
-      const sans = 'Manrope, system-ui, sans-serif';
-      const serif = 'Fraunces, Georgia, serif';
       ctx.textAlign = 'left';
 
-      // Wordmark
-      ctx.fillStyle = '#e8f2ff';
-      ctx.font = `500 46px ${serif}`;
-      ctx.fillText('Lifeline', 96, 150);
+      // Brand
       ctx.fillStyle = '#5b8cff';
       ctx.beginPath();
-      ctx.arc(84, 136, 9, 0, Math.PI * 2);
+      ctx.arc(86, 138, 10, 0, Math.PI * 2);
       ctx.fill();
+      ctx.fillStyle = '#eaf2ff';
+      ctx.font = `500 48px ${serif}`;
+      ctx.fillText('Lifeline', 108, 154);
 
-      // "I have been alive for"
-      ctx.fillStyle = '#aab4d6';
-      ctx.font = `600 34px ${sans}`;
-      ctx.fillText('I have been alive for', 96, 430);
+      // Eyebrow
+      ctx.fillStyle = '#8ad7ff';
+      ctx.font = `700 30px ${sans}`;
+      ctx.save();
+      ctx.letterSpacing = '6px';
+      ctx.fillText('I’VE BEEN ALIVE FOR', 96, 400);
+      ctx.restore();
 
-      // Big days number (gradient)
+      // Big days
       const daysStr = fmt(totals.days);
-      ctx.font = `800 210px ${sans}`;
-      const grad = ctx.createLinearGradient(96, 460, 96, 660);
+      ctx.font = `800 200px ${sans}`;
+      const grad = ctx.createLinearGradient(96, 430, 96, 640);
       grad.addColorStop(0, '#ffffff');
       grad.addColorStop(1, '#bcd3ff');
       ctx.fillStyle = grad;
-      ctx.fillText(daysStr, 92, 620);
-
+      ctx.fillText(daysStr, 92, 600);
       ctx.fillStyle = '#8ad7ff';
-      ctx.font = `600 60px ${sans}`;
-      ctx.fillText('days', 100, 700);
+      ctx.font = `700 56px ${sans}`;
+      ctx.fillText('days on Earth', 100, 672);
 
-      // Seconds + born line
-      ctx.fillStyle = '#c7cfe8';
-      ctx.font = `500 34px ${sans}`;
-      ctx.fillText(`${fmt(totals.seconds)} seconds  ·  ${years} years`, 96, 800);
-      ctx.fillStyle = '#8b93b4';
-      ctx.font = `500 30px ${sans}`;
-      ctx.fillText(`Born ${formatFullDate(birthDate)}`, 96, 850);
+      // Filled stat pills
+      const pills = [`${years} years`, `${compact(totals.seconds)} seconds`, `${fmt(weeks)} weeks`];
+      let px = 96;
+      const py = 760;
+      const ph = 74;
+      ctx.font = `700 34px ${sans}`;
+      pills.forEach((label) => {
+        const tw = ctx.measureText(label).width;
+        const pw = tw + 56;
+        ctx.fillStyle = 'rgba(138,215,255,0.12)';
+        ctx.strokeStyle = 'rgba(138,215,255,0.32)';
+        ctx.lineWidth = 1.5;
+        roundRectPath(ctx, px, py, pw, ph, ph / 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#dbeaff';
+        ctx.fillText(label, px + 28, py + ph / 2 + 12);
+        px += pw + 18;
+      });
+
+      // Punchy line
+      ctx.fillStyle = '#e6ecff';
+      ctx.font = `italic 300 52px ${serif}`;
+      ctx.fillText('Every single one, lived once —', 96, 940);
+      ctx.fillText('and never again.', 96, 1004);
 
       // Divider
       ctx.strokeStyle = 'rgba(255,255,255,0.12)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(96, 930);
-      ctx.lineTo(W - 96, 930);
+      ctx.moveTo(96, 1080);
+      ctx.lineTo(W - 96, 1080);
       ctx.stroke();
 
-      // Generation chip line
+      // Generation + born
       ctx.fillStyle = '#aab4d6';
       ctx.font = `600 34px ${sans}`;
-      ctx.fillText(`${gen.name}  ·  born in the ${gen.decade}`, 96, 1010);
+      ctx.fillText(`${gen.name}  ·  born ${formatFullDate(birthDate)}`, 96, 1150);
 
       // Footer
       ctx.fillStyle = '#8ad7ff';
-      ctx.font = `600 34px ${sans}`;
-      ctx.fillText('lifeline.harmansharma.in', 96, H - 110);
-      ctx.fillStyle = '#6d7699';
-      ctx.font = `500 28px ${sans}`;
-      ctx.fillText('Your life, measured in time.', 96, H - 68);
+      ctx.font = `700 36px ${sans}`;
+      ctx.fillText('lifeline.harmansharma.in', 96, H - 96);
+      ctx.fillStyle = '#7a83a6';
+      ctx.font = `500 30px ${sans}`;
+      ctx.fillText('How many days have you lived?', 96, H - 54);
     };
 
-    // Paint immediately, then repaint once web fonts are ready for crisp type.
     paint();
     if (document.fonts && document.fonts.ready) {
       Promise.all([
-        document.fonts.load('800 210px Manrope'),
-        document.fonts.load('600 34px Manrope'),
-        document.fonts.load('500 46px Fraunces'),
-      ])
-        .then(() => paint())
-        .catch(() => {});
+        document.fonts.load('800 200px Manrope'),
+        document.fonts.load('700 34px Manrope'),
+        document.fonts.load('italic 300 52px Fraunces'),
+        document.fonts.load('500 48px Fraunces'),
+      ]).then(() => paint()).catch(() => {});
     }
   }, [birthDate]);
 
-  const getBlob = () =>
-    new Promise((resolve) => canvasRef.current.toBlob(resolve, 'image/png', 0.95));
+  const getBlob = () => new Promise((res) => canvasRef.current.toBlob(res, 'image/png', 0.95));
+
+  const shareText =
+    'My life, measured in time. Every single day, lived once. See yours → lifeline.harmansharma.in';
 
   const handleDownload = async () => {
     const blob = await getBlob();
@@ -176,7 +219,7 @@ export default function ShareCard({ birthDate }) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setStatus('Image downloaded');
+    setStatus('Image saved');
     setTimeout(() => setStatus(''), 2500);
   };
 
@@ -185,16 +228,12 @@ export default function ShareCard({ birthDate }) {
       const blob = await getBlob();
       const file = new File([blob], 'my-lifeline.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'My Lifeline',
-          text: 'My life, measured in time — lifeline.harmansharma.in',
-        });
+        await navigator.share({ files: [file], title: 'My Lifeline', text: shareText });
       } else {
         await handleDownload();
       }
     } catch {
-      /* user cancelled — no-op */
+      /* cancelled */
     }
   };
 
@@ -215,7 +254,8 @@ export default function ShareCard({ birthDate }) {
           <p className="eyebrow">Take it with you</p>
           <h2 className="section-title" id="share-heading">Share your Lifeline</h2>
           <p className="section-lede">
-            A little snapshot of your time so far — save it, or send it to someone who’ll feel it too.
+            A snapshot of your time so far. Save it, or send it to someone and ask them the
+            question that started it all — how many days have you lived?
           </p>
         </Reveal>
 
