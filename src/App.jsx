@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
+import Starfield from './components/Starfield.jsx';
 import BirthdayInput from './components/BirthdayInput.jsx';
 import LifeCounter from './components/LifeCounter.jsx';
 import BirthdayRarity from './components/BirthdayRarity.jsx';
@@ -46,7 +47,7 @@ export default function App() {
   return (
     <>
       <div className="bg-cosmos" aria-hidden="true" />
-      <div className="bg-grain" aria-hidden="true" />
+      <Starfield reducedMotion={reducedMotion} />
 
       {/* Avoid a flash before LocalStorage is read. */}
       {!ready && <div style={{ minHeight: '100svh' }} aria-hidden="true" />}
@@ -75,14 +76,27 @@ export default function App() {
             <LifeStats birthDate={birthday.birthDate} />
             <LifeProgress birthDate={birthday.birthDate} />
 
-            <section className="section" aria-label="Manage your birthday">
-              <div className="container control-row">
-                <button type="button" className="btn-ghost" onClick={handleChange}>
-                  Change birthday
-                </button>
-                <button type="button" className="btn-ghost" onClick={handleStartOver}>
-                  Start over
-                </button>
+            <section className="section manage-section" aria-label="Manage your birthday">
+              <div className="container">
+                <div className="manage glass">
+                  <p className="manage-title">This is your Lifeline.</p>
+                  <p className="manage-sub">Saved on this device — come back anytime.</p>
+                  <div className="manage-actions">
+                    <button type="button" className="manage-btn primary" onClick={handleChange}>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="3" y="4.5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="1.6" />
+                        <path d="M3 9h18M8 2.5v4M16 2.5v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                      </svg>
+                      Change birthday
+                    </button>
+                    <button type="button" className="manage-btn" onClick={handleStartOver}>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v3.4h3.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Start over
+                    </button>
+                  </div>
+                </div>
               </div>
             </section>
           </main>

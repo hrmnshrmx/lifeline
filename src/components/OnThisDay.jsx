@@ -1,7 +1,6 @@
-import { useMemo } from 'react';
 import Reveal from './Reveal.jsx';
-import { getOnThisDay } from '../data/onThisDay.js';
-import { toMonthDayKey, formatDayMonth } from '../utils/dateCalculations.js';
+import { useOnThisDay } from '../hooks/useOnThisDay.js';
+import { formatDayMonth } from '../utils/dateCalculations.js';
 
 function Group({ title, items }) {
   if (!items || items.length === 0) return null;
@@ -12,7 +11,13 @@ function Group({ title, items }) {
         {items.map((item, i) => (
           <li className="otd-item" key={`${item.year}-${i}`}>
             <span className="otd-year">{item.year}</span>
-            <p className="otd-text">{item.text}</p>
+            {item.url ? (
+              <p className="otd-text">
+                <a href={item.url} target="_blank" rel="noopener noreferrer">{item.text}</a>
+              </p>
+            ) : (
+              <p className="otd-text">{item.text}</p>
+            )}
           </li>
         ))}
       </ul>
@@ -21,14 +26,8 @@ function Group({ title, items }) {
 }
 
 export default function OnThisDay({ birthDate }) {
-  const key = useMemo(() => toMonthDayKey(birthDate), [birthDate]);
-  const data = useMemo(() => getOnThisDay(key), [key]);
+  const { status, data } = useOnThisDay(birthDate);
   const dayLabel = formatDayMonth(birthDate);
-
-  const hasAny =
-    data && ((data.events && data.events.length) ||
-      (data.births && data.births.length) ||
-      (data.deaths && data.deaths.length));
 
   return (
     <section className="section" aria-labelledby="otd-heading">
@@ -41,27 +40,48 @@ export default function OnThisDay({ birthDate }) {
           </p>
         </Reveal>
 
-        {hasAny ? (
-          <Reveal className="otd-groups" style={{ marginTop: '1.8rem' }}>
-            <Group title="Events" items={data.events} />
-            <Group title="Births" items={data.births} />
-            <Group title="Passings" items={data.deaths} />
-          </Reveal>
-        ) : (
-          <Reveal className="glass otd-empty" style={{ marginTop: '1.8rem' }}>
-            <p className="big">We’re still collecting stories from this day.</p>
-            <p className="note">
-              Our curated history doesn’t include {dayLabel} yet — and we never invent events.
-            </p>
-          </Reveal>
+        {status === 'loading' && (
+          <div className="otd-groups" style={{ marginTop: '1.8rem' }} aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <div className="glass otd-group otd-skeleton" key={i}>
+                <span className="sk sk-title" />
+                <span className="sk sk-line" />
+                <span className="sk sk-line short" />
+                <span className="sk sk-line" />
+              </div>
+            ))}
+          </div>
         )}
 
-        {hasAny && (
-          <Reveal>
-            <p className="note" style={{ marginTop: '1.4rem' }}>
-              Curated from the widely-documented public historical record. Only entries in our
-              dataset are shown — nothing here is generated.
-            </p>
+        {status === 'ready' && data && !data.empty && (
+          <>
+            <Reveal className="otd-groups" style={{ marginTop: '1.8rem' }}>
+              <Group title="Events" items={data.events} />
+              <Group title="Births" items={data.births} />
+              <Group title="Passings" items={data.deaths} />
+            </Reveal>
+            <Reveal>
+              <p className="note otd-source">
+                {data.source === 'wikipedia' ? (
+                  <>
+                    Source:{' '}
+                    <a href={data.sourceUrl} target="_blank" rel="noopener noreferrer">
+                      Wikipedia — {dayLabel}
+                    </a>
+                    . Only your calendar day is looked up; your birth year never leaves this device.
+                  </>
+                ) : (
+                  <>Curated from the public historical record. Nothing here is generated.</>
+                )}
+              </p>
+            </Reveal>
+          </>
+        )}
+
+        {status === 'ready' && data && data.empty && (
+          <Reveal className="glass otd-empty" style={{ marginTop: '1.8rem' }}>
+            <p className="big">We’re still collecting stories from this day.</p>
+            <p className="note">We couldn’t reach the archive right now — and we never invent events.</p>
           </Reveal>
         )}
       </div>

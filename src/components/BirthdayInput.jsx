@@ -1,33 +1,49 @@
-import { useRef, useState } from 'react';
-import { parseBirthday, isFuture } from '../utils/dateCalculations.js';
+import { useMemo, useState } from 'react';
+import { parseBirthday, isFuture, MONTH_NAMES } from '../utils/dateCalculations.js';
 
-const TODAY_ISO = () => {
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
-};
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - 1900 + 1 }, (_, i) => CURRENT_YEAR - i);
+
+function daysInMonth(month /* 1-12 */, year) {
+  if (!month) return 31;
+  return new Date(year || 2000, month, 0).getDate();
+}
+
+function pad(n) {
+  return String(n).padStart(2, '0');
+}
 
 /**
- * The opening experience: wordmark → prompt → date picker → Begin.
- * Uses a native date input (mobile-friendly) plus an optional time field.
+ * Opening experience: wordmark → prompt → an unambiguous DD / MM / YYYY
+ * selector (no locale surprises) → Begin. Time is optional, on its own row.
  */
 export default function BirthdayInput({ onSubmit, initialDate = '', initialTime = '' }) {
-  const [date, setDate] = useState(initialDate);
+  const [y0, m0, d0] = initialDate ? initialDate.split('-') : ['', '', ''];
+  const [day, setDay] = useState(d0 ? String(Number(d0)) : '');
+  const [month, setMonth] = useState(m0 ? String(Number(m0)) : '');
+  const [year, setYear] = useState(y0 ? String(Number(y0)) : '');
   const [time, setTime] = useState(initialTime);
   const [error, setError] = useState('');
-  const dateRef = useRef(null);
+
+  const maxDay = useMemo(
+    () => daysInMonth(Number(month), Number(year)),
+    [month, year],
+  );
+  const days = useMemo(
+    () => Array.from({ length: maxDay }, (_, i) => i + 1),
+    [maxDay],
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!date) {
-      setError('Please choose your date of birth.');
-      dateRef.current?.focus();
+    if (!day || !month || !year) {
+      setError('Please choose your day, month and year.');
       return;
     }
-    const result = parseBirthday(date, time);
+    const dateStr = `${year}-${pad(Number(month))}-${pad(Number(day))}`;
+    const result = parseBirthday(dateStr, time);
     if (!result) {
-      setError("That date doesn't look right. Please check and try again.");
+      setError("That date doesn't exist. Please check the day and month.");
       return;
     }
     if (isFuture(result.date)) {
@@ -35,53 +51,83 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
       return;
     }
     setError('');
-    onSubmit(date, result.hasTime ? time : '');
+    onSubmit(dateStr, result.hasTime ? time : '');
   };
 
   return (
     <section className="intro" aria-labelledby="intro-heading">
       <div className="intro-inner stagger">
-        <h1 className="wordmark" id="intro-heading">LIFELINE</h1>
+        <h1 className="wordmark" id="intro-heading">Lifeline</h1>
         <p className="tagline">Your life, measured in time.</p>
 
         <p className="prompt">When did your story begin?</p>
 
         <form className="dob-form" onSubmit={handleSubmit} noValidate>
-          <div className="field-row">
-            <div className="field">
-              <label htmlFor="dob">Date of birth</label>
-              <input
-                id="dob"
-                ref={dateRef}
-                className="input"
-                type="date"
-                value={date}
-                max={TODAY_ISO()}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                aria-describedby="privacy-note"
-                autoComplete="bday"
-              />
+          <div className="field">
+            <span className="field-legend" id="dob-legend">Date of birth</span>
+            <div className="dob-selects" role="group" aria-labelledby="dob-legend">
+              <div className="select-wrap">
+                <select
+                  className="select"
+                  aria-label="Day"
+                  value={day}
+                  onChange={(e) => setError('') || setDay(e.target.value)}
+                >
+                  <option value="" disabled>DD</option>
+                  {days.map((n) => (
+                    <option key={n} value={n}>{pad(n)}</option>
+                  ))}
+                </select>
+              </div>
+              <span className="dob-sep" aria-hidden="true">/</span>
+              <div className="select-wrap month">
+                <select
+                  className="select"
+                  aria-label="Month"
+                  value={month}
+                  onChange={(e) => setError('') || setMonth(e.target.value)}
+                >
+                  <option value="" disabled>MM</option>
+                  {MONTH_NAMES.map((name, i) => (
+                    <option key={name} value={i + 1}>{pad(i + 1)} · {name}</option>
+                  ))}
+                </select>
+              </div>
+              <span className="dob-sep" aria-hidden="true">/</span>
+              <div className="select-wrap">
+                <select
+                  className="select"
+                  aria-label="Year"
+                  value={year}
+                  onChange={(e) => setError('') || setYear(e.target.value)}
+                >
+                  <option value="" disabled>YYYY</option>
+                  {YEARS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="field time">
-              <label htmlFor="tob">
-                Time <span className="hint-optional">(optional)</span>
-              </label>
-              <input
-                id="tob"
-                className="input"
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-              />
-            </div>
+          </div>
+
+          <div className="field time-field">
+            <label htmlFor="tob">
+              Time of birth <span className="hint-optional">(optional)</span>
+            </label>
+            <input
+              id="tob"
+              className="input"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+            />
           </div>
 
           <p className="form-error" role="alert">{error}</p>
 
           <button type="submit" className="btn">Begin</button>
 
-          <span className="privacy" id="privacy-note">
+          <span className="privacy">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"
                 stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />

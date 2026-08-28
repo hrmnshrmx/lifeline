@@ -3,7 +3,7 @@ export default function Header({ onChangeBirthday }) {
     <header className="site-header">
       <span className="brand">
         <span className="dot" aria-hidden="true" />
-        LIFELINE
+        Lifeline
       </span>
       {onChangeBirthday && (
         <button type="button" className="btn-ghost" onClick={onChangeBirthday}>
