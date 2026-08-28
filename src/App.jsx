@@ -37,6 +37,10 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [clear]);
 
+  const handleHome = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }, [reducedMotion]);
+
   // Keep the document title stable but meaningful once a birthday is set.
   useEffect(() => {
     document.title = 'Lifeline — Your Life, Measured in Time';
@@ -64,7 +68,7 @@ export default function App() {
 
       {ready && !showInput && birthday && (
         <>
-          <Header onChangeBirthday={handleChange} />
+          <Header onChangeBirthday={handleChange} onHome={handleHome} />
           <main id="main">
             <LifeCounter
               birthDate={birthday.birthDate}

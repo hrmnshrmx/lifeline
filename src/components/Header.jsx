@@ -1,10 +1,10 @@
-export default function Header({ onChangeBirthday }) {
+export default function Header({ onChangeBirthday, onHome }) {
   return (
     <header className="site-header">
-      <span className="brand">
+      <button type="button" className="brand" onClick={onHome} aria-label="Lifeline — back to top">
         <span className="dot" aria-hidden="true" />
         Lifeline
-      </span>
+      </button>
       {onChangeBirthday && (
         <button type="button" className="btn-ghost" onClick={onChangeBirthday}>
           Change birthday

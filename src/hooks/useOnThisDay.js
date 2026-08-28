@@ -32,7 +32,19 @@ function normalize(items, limit) {
         page && page.content_urls && page.content_urls.desktop
           ? page.content_urls.desktop.page
           : null;
-      return { year: it.year, text: it.text, url };
+      // Strip Wikipedia's tracking params off thumbnail URLs.
+      let thumb = null;
+      if (page && page.thumbnail && page.thumbnail.source) {
+        thumb = page.thumbnail.source.split('?')[0];
+      }
+      return {
+        year: it.year,
+        text: it.text,
+        url,
+        thumb,
+        title: page ? page.normalizedtitle || (page.titles && page.titles.normalized) : null,
+        desc: page ? page.description : null,
+      };
     });
 }
 

@@ -1,8 +1,16 @@
 import { useMemo, useState } from 'react';
+import Select from './Select.jsx';
 import { parseBirthday, isFuture, MONTH_NAMES } from '../utils/dateCalculations.js';
 
 const CURRENT_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: CURRENT_YEAR - 1900 + 1 }, (_, i) => CURRENT_YEAR - i);
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1900 + 1 }, (_, i) => {
+  const y = CURRENT_YEAR - i;
+  return { value: y, label: String(y) };
+});
+const MONTH_OPTIONS = MONTH_NAMES.map((name, i) => ({
+  value: i + 1,
+  label: `${String(i + 1).padStart(2, '0')} · ${name}`,
+}));
 
 function daysInMonth(month /* 1-12 */, year) {
   if (!month) return 31;
@@ -15,7 +23,7 @@ function pad(n) {
 
 /**
  * Opening experience: wordmark → prompt → an unambiguous DD / MM / YYYY
- * selector (no locale surprises) → Begin. Time is optional, on its own row.
+ * selector (custom themed dropdowns) → Begin. Time is optional, on its own row.
  */
 export default function BirthdayInput({ onSubmit, initialDate = '', initialTime = '' }) {
   const [y0, m0, d0] = initialDate ? initialDate.split('-') : ['', '', ''];
@@ -25,12 +33,9 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
   const [time, setTime] = useState(initialTime);
   const [error, setError] = useState('');
 
-  const maxDay = useMemo(
-    () => daysInMonth(Number(month), Number(year)),
-    [month, year],
-  );
-  const days = useMemo(
-    () => Array.from({ length: maxDay }, (_, i) => i + 1),
+  const maxDay = useMemo(() => daysInMonth(Number(month), Number(year)), [month, year]);
+  const dayOptions = useMemo(
+    () => Array.from({ length: maxDay }, (_, i) => ({ value: i + 1, label: pad(i + 1) })),
     [maxDay],
   );
 
@@ -54,6 +59,11 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
     onSubmit(dateStr, result.hasTime ? time : '');
   };
 
+  const clamp = (setter) => (v) => {
+    setError('');
+    setter(v);
+  };
+
   return (
     <section className="intro" aria-labelledby="intro-heading">
       <div className="intro-inner stagger">
@@ -64,48 +74,47 @@ export default function BirthdayInput({ onSubmit, initialDate = '', initialTime 
 
         <form className="dob-form" onSubmit={handleSubmit} noValidate>
           <div className="field">
-            <span className="field-legend" id="dob-legend">Date of birth</span>
-            <div className="dob-selects" role="group" aria-labelledby="dob-legend">
-              <div className="select-wrap">
-                <select
-                  className="select"
-                  aria-label="Day"
+            <span className="field-legend">Date of birth</span>
+            <div className="dob-selects" role="group" aria-label="Date of birth, day month year">
+              <div className="dob-col day">
+                <Select
+                  ariaLabel="Day"
+                  placeholder="DD"
                   value={day}
-                  onChange={(e) => setError('') || setDay(e.target.value)}
-                >
-                  <option value="" disabled>DD</option>
-                  {days.map((n) => (
-                    <option key={n} value={n}>{pad(n)}</option>
-                  ))}
-                </select>
+                  onChange={clamp((v) => {
+                    // Keep day valid if it exceeds the new month's length.
+                    setDay(v);
+                  })}
+                  options={dayOptions}
+                />
               </div>
               <span className="dob-sep" aria-hidden="true">/</span>
-              <div className="select-wrap month">
-                <select
-                  className="select"
-                  aria-label="Month"
+              <div className="dob-col month">
+                <Select
+                  ariaLabel="Month"
+                  placeholder="MM"
                   value={month}
-                  onChange={(e) => setError('') || setMonth(e.target.value)}
-                >
-                  <option value="" disabled>MM</option>
-                  {MONTH_NAMES.map((name, i) => (
-                    <option key={name} value={i + 1}>{pad(i + 1)} · {name}</option>
-                  ))}
-                </select>
+                  onChange={clamp((v) => {
+                    setMonth(v);
+                    const max = daysInMonth(Number(v), Number(year));
+                    if (day && Number(day) > max) setDay(String(max));
+                  })}
+                  options={MONTH_OPTIONS}
+                />
               </div>
               <span className="dob-sep" aria-hidden="true">/</span>
-              <div className="select-wrap">
-                <select
-                  className="select"
-                  aria-label="Year"
+              <div className="dob-col year">
+                <Select
+                  ariaLabel="Year"
+                  placeholder="YYYY"
                   value={year}
-                  onChange={(e) => setError('') || setYear(e.target.value)}
-                >
-                  <option value="" disabled>YYYY</option>
-                  {YEARS.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
+                  onChange={clamp((v) => {
+                    setYear(v);
+                    const max = daysInMonth(Number(month), Number(v));
+                    if (day && Number(day) > max) setDay(String(max));
+                  })}
+                  options={YEAR_OPTIONS}
+                />
               </div>
             </div>
           </div>

@@ -52,19 +52,26 @@ export default function Starfield({ reducedMotion = false }) {
     }
 
     function spawnShootingStar() {
-      // Start from a random point in the upper area, shoot down-right.
-      const startX = Math.random() * width * 0.8;
-      const startY = Math.random() * height * 0.35;
-      const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.5;
-      const speed = (isSmall ? 6 : 9) + Math.random() * 5;
+      // Randomise both where it starts and which way it flies, so streaks
+      // never look like they come from the same few points.
+      const goRight = Math.random() < 0.55; // mostly →, sometimes ←
+      // Start anywhere across the top ~65% of the screen, on the side it
+      // travels away from, so the whole streak stays visible.
+      const startX = goRight
+        ? Math.random() * width * 0.55
+        : width * 0.45 + Math.random() * width * 0.55;
+      const startY = Math.random() * height * 0.6;
+      // Downward angle between ~20° and ~55°, mirrored for leftward stars.
+      const angle = (20 + Math.random() * 35) * (Math.PI / 180);
+      const speed = (isSmall ? 5 : 7.5) + Math.random() * 6;
       shootingStars.push({
         x: startX,
         y: startY,
-        vx: Math.cos(angle) * speed,
+        vx: Math.cos(angle) * speed * (goRight ? 1 : -1),
         vy: Math.sin(angle) * speed,
-        len: 120 + Math.random() * 140,
+        len: 90 + Math.random() * 170,
         life: 0,
-        maxLife: 60 + Math.random() * 30,
+        maxLife: 55 + Math.random() * 40,
       });
     }
 
@@ -85,8 +92,9 @@ export default function Starfield({ reducedMotion = false }) {
         ctx.fill();
       }
 
-      // Occasional shooting star (~ every 2.6–5s)
-      if (t - lastShoot > 2600 + Math.random() * 2400 && shootingStars.length < 2) {
+      // Occasional shooting star, with a randomised gap (~1.8–4.6s) so the
+      // cadence itself varies too.
+      if (t - lastShoot > 1800 + Math.random() * 2800 && shootingStars.length < 2) {
         spawnShootingStar();
         lastShoot = t;
       }
