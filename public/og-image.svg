@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="70%" cy="30%" r="90%">
+      <stop offset="0%" stop-color="#0b1230"/>
+      <stop offset="100%" stop-color="#05060a"/>
+    </radialGradient>
+    <radialGradient id="planet" cx="38%" cy="34%" r="75%">
+      <stop offset="0%" stop-color="#7fd4ff"/>
+      <stop offset="45%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#0e1636"/>
+    </radialGradient>
+    <linearGradient id="txt" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#8be9ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g opacity="0.85">
+    <circle cx="925" cy="300" r="150" fill="url(#planet)"/>
+    <circle cx="925" cy="300" r="176" fill="none" stroke="#8be9ff" stroke-width="2" opacity="0.35"/>
+  </g>
+  <g fill="#ffffff" opacity="0.9">
+    <circle cx="120" cy="90" r="2"/>
+    <circle cx="300" cy="140" r="1.6"/>
+    <circle cx="200" cy="520" r="2"/>
+    <circle cx="640" cy="80" r="1.5"/>
+    <circle cx="500" cy="560" r="1.8"/>
+    <circle cx="1080" cy="120" r="1.8"/>
+  </g>
+  <text x="90" y="250" font-family="'Space Grotesk', Arial, sans-serif" font-size="96" font-weight="700" fill="url(#txt)" letter-spacing="6">LIFELINE</text>
+  <text x="94" y="322" font-family="Inter, Arial, sans-serif" font-size="34" fill="#aeb7d6">Your life, measured in time.</text>
+  <text x="94" y="430" font-family="'Space Grotesk', Arial, sans-serif" font-size="30" font-weight="600" fill="#e8ecff">Days · Hours · Minutes · Seconds — live.</text>
+</svg>
